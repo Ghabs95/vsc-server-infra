@@ -26,6 +26,15 @@ provider "oci" {
 
 locals {
   cloud_init_template_path = "${path.cwd}/cloud-init.yaml.tpl"
+  webhook_allowed_cidrs = [
+    "95.248.208.163/32",
+    "192.30.252.0/22",
+    "185.199.108.0/22",
+    "140.82.112.0/20",
+    "143.55.64.0/20",
+    "2a0a:a440::/29",
+    "2606:50c0::/32",
+  ]
 }
 module "oci-ampere-a1" {
   source                   = "github.com/amperecomputing/terraform-oci-ampere-a1"
@@ -69,16 +78,16 @@ resource "oci_core_network_security_group_security_rule" "allow_http" {
 
 # Add ingress rule for port 8081 (webhook server)
 resource "oci_core_network_security_group_security_rule" "allow_webhook" {
-  count                         = length(data.oci_core_network_security_groups.nsg.network_security_groups) > 0 ? 1 : 0
-  network_security_group_id     = data.oci_core_network_security_groups.nsg.network_security_groups[0].id
-  direction                     = "INGRESS"
-  protocol                      = "6" # TCP
-  source                        = "0.0.0.0/0"
+  for_each                    = length(data.oci_core_network_security_groups.nsg.network_security_groups) > 0 ? toset(local.webhook_allowed_cidrs) : toset([])
+  network_security_group_id   = data.oci_core_network_security_groups.nsg.network_security_groups[0].id
+  direction                   = "INGRESS"
+  protocol                    = "6" # TCP
+  source                      = each.key
   destination_port_range {
     min = 8081
     max = 8081
   }
-  description = "Allow webhook server from GitHub"
+  description = "Allow webhook server from GitHub + verifier IP"
 }
 
 output "oci_ampere_a1_private_ips" {
