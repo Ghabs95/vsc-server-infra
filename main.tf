@@ -28,11 +28,11 @@ locals {
   cloud_init_template_path = "${path.cwd}/cloud-init.yaml.tpl"
 }
 module "oci-ampere-a1" {
-  source                   = "github.com/amperecomputing/terraform-oci-ampere-a1"
-  tenancy_ocid             = var.tenancy_ocid
-  user_ocid                = var.user_ocid
-  fingerprint              = var.fingerprint
-  private_key_path         = var.private_key_path
+  source           = "github.com/amperecomputing/terraform-oci-ampere-a1"
+  tenancy_ocid     = var.tenancy_ocid
+  user_ocid        = var.user_ocid
+  fingerprint      = var.fingerprint
+  private_key_path = var.private_key_path
   # Optional
   # oci_vcn_cidr_block       = "10.2.0.0/16"
   # oci_vcn_cidr_subnet      = "10.2.1.0/24"
@@ -43,53 +43,25 @@ module "oci-ampere-a1" {
   ampere_a1_cpu_core_count = "4"
   cloud_init_template_file = local.cloud_init_template_path
 }
-# Get the default security list from the subnet created by the module
-data "oci_core_vlans" "vlans" {
-  vcn_id = module.oci-ampere-a1.ampere_a1_vpc_id
-}
-
-data "oci_core_network_security_groups" "nsg" {
-  compartment_id = var.tenancy_ocid
-  display_name   = "ghabs-hq"
-}
-
-# Add ingress rule for port 80 (HTTP/Nginx)
-resource "oci_core_network_security_group_security_rule" "allow_http" {
-  count                         = length(data.oci_core_network_security_groups.nsg.network_security_groups) > 0 ? 1 : 0
-  network_security_group_id     = data.oci_core_network_security_groups.nsg.network_security_groups[0].id
-  direction                     = "INGRESS"
-  protocol                      = "6" # TCP
-  source                        = "0.0.0.0/0"
-  destination_port_range {
-    min = 80
-    max = 80
-  }
-  description = "Allow HTTP from anywhere"
-}
-
-# Add ingress rule for port 8081 (webhook server)
-resource "oci_core_network_security_group_security_rule" "allow_webhook" {
-  count                         = length(data.oci_core_network_security_groups.nsg.network_security_groups) > 0 ? 1 : 0
-  network_security_group_id     = data.oci_core_network_security_groups.nsg.network_security_groups[0].id
-  direction                     = "INGRESS"
-  protocol                      = "6" # TCP
-  source                        = "0.0.0.0/0"
-  destination_port_range {
-    min = 8081
-    max = 8081
-  }
-  description = "Allow webhook server from GitHub"
-}
 
 output "oci_ampere_a1_private_ips" {
-  value     = module.oci-ampere-a1.ampere_a1_private_ips
+  value = module.oci-ampere-a1.ampere_a1_private_ips
 }
 output "oci_ampere_a1_public_ips" {
-  value     = module.oci-ampere-a1.ampere_a1_public_ips
+  value = module.oci-ampere-a1.ampere_a1_public_ips
 }
 output "webhook_url" {
-  value = "http://${module.oci-ampere-a1.ampere_a1_public_ips[0]}/webhook"
+  value = "http://${module.oci-ampere-a1.ampere_a1_public_ips[0][0]}/webhook"
 }
 output "webhook_url_port8081" {
-  value = "http://${module.oci-ampere-a1.ampere_a1_public_ips[0]}:8081/webhook"
+  value = "http://${module.oci-ampere-a1.ampere_a1_public_ips[0][0]}:8081/webhook"
+}
+
+resource "null_resource" "lifecycle_lock" {
+  provisioner "local-exec" {
+    command = "echo 'Lifecycle lock active'"
+  }
+  lifecycle {
+    prevent_destroy = true
+  }
 }
