@@ -34,13 +34,33 @@ This project leverages the [terraform-oci-ampere-a1](https://github.com/AmpereCo
     terraform apply
     ```
 
+## Security Configuration
+
+### Webhook Firewall Rules (Port 8081)
+
+The Terraform configuration automatically restricts incoming traffic to port 8081 (Nexus webhook server) to:
+
+- **GitHub webhook IP ranges** (from https://api.github.com/meta):
+  - IPv4: 192.30.252.0/22, 185.199.108.0/22, 140.82.112.0/20, 143.55.64.0/20
+  - IPv6: 2a0a:a440::/29, 2606:50c0::/32
+- **Your verification IP** (temporary: 95.248.208.163/32)
+
+These rules are defined in `main.tf` under `locals.webhook_allowed_cidrs` and applied via `for_each` in the NSG security rules.
+
+**To modify allowed IPs:**
+1. Edit `main.tf` → `locals.webhook_allowed_cidrs`
+2. Run `terraform plan` to preview changes
+3. Run `terraform apply` to update NSG rules
+
+Additionally, the VM itself has host-level iptables rules (see [nexus/docs/RESTORE.md](../nexus/docs/RESTORE.md#part-4-firewall-security-host-level) for details).
+
 ## Installed Software
 
 The instance is automatically provisioned with the following tools to support the BIOME, CASE ITALIA, and WALLIBLE agent
 ecosystems:
 
 - **Docker & Docker Compose** - [https://docs.docker.com/install/](https://docs.docker.com/install/)
-- **Node.js 20** - [https://nodejs.org/](https://nodejs.org/)
+- **Node.js 22** - [https://nodejs.org/](https://nodejs.org/)
 - **Java 17 (OpenJDK)** - [https://openjdk.org/projects/jdk/17/](https://openjdk.org/projects/jdk/17/)
 - **Python 3 & pip** - [https://www.python.org/](https://www.python.org/)
 - **Terraform** - [https://www.terraform.io/](https://www.terraform.io/)
