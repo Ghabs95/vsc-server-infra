@@ -37,11 +37,11 @@ locals {
   ]
 }
 module "oci-ampere-a1" {
-  source                   = "github.com/amperecomputing/terraform-oci-ampere-a1"
-  tenancy_ocid             = var.tenancy_ocid
-  user_ocid                = var.user_ocid
-  fingerprint              = var.fingerprint
-  private_key_path         = var.private_key_path
+  source           = "github.com/amperecomputing/terraform-oci-ampere-a1"
+  tenancy_ocid     = var.tenancy_ocid
+  user_ocid        = var.user_ocid
+  fingerprint      = var.fingerprint
+  private_key_path = var.private_key_path
   # Optional
   # oci_vcn_cidr_block       = "10.2.0.0/16"
   # oci_vcn_cidr_subnet      = "10.2.1.0/24"
@@ -91,14 +91,23 @@ resource "oci_core_network_security_group_security_rule" "allow_webhook" {
 }
 
 output "oci_ampere_a1_private_ips" {
-  value     = module.oci-ampere-a1.ampere_a1_private_ips
+  value = module.oci-ampere-a1.ampere_a1_private_ips
 }
 output "oci_ampere_a1_public_ips" {
-  value     = module.oci-ampere-a1.ampere_a1_public_ips
+  value = module.oci-ampere-a1.ampere_a1_public_ips
 }
 output "webhook_url" {
-  value = "http://${module.oci-ampere-a1.ampere_a1_public_ips[0]}/webhook"
+  value = "http://${module.oci-ampere-a1.ampere_a1_public_ips[0][0]}/webhook"
 }
 output "webhook_url_port8081" {
-  value = "http://${module.oci-ampere-a1.ampere_a1_public_ips[0]}:8081/webhook"
+  value = "http://${module.oci-ampere-a1.ampere_a1_public_ips[0][0]}:8081/webhook"
+}
+
+resource "null_resource" "lifecycle_lock" {
+  provisioner "local-exec" {
+    command = "echo 'Lifecycle lock active'"
+  }
+  lifecycle {
+    prevent_destroy = true
+  }
 }
