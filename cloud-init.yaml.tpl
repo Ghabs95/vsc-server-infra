@@ -13,6 +13,7 @@ packages:
 - jq
 - unzip
 - software-properties-common
+- redis-server
 
 write_files:
 - path: /home/ubuntu/setup_flutter.sh
