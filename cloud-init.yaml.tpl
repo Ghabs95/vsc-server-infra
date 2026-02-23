@@ -14,6 +14,8 @@ packages:
 - unzip
 - software-properties-common
 - redis-server
+- postgresql
+- postgresql-contrib
 
 write_files:
 - path: /home/ubuntu/setup_flutter.sh
@@ -61,6 +63,14 @@ runcmd:
 # Start Nginx
 - systemctl start nginx
 - systemctl enable nginx
+
+# Start PostgreSQL
+- systemctl start postgresql
+- systemctl enable postgresql
+
+# Start Redis
+- systemctl start redis-server
+- systemctl enable redis-server
 
 # Install Docker (Official Script)
 # This installs docker-ce, docker-ce-cli, containerd.io, docker-buildx-plugin, docker-compose-plugin
