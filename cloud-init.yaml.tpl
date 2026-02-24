@@ -67,6 +67,10 @@ runcmd:
 # Start PostgreSQL
 - systemctl start postgresql
 - systemctl enable postgresql
+- sudo -u postgres psql -tc "SELECT 1 FROM pg_roles WHERE rolname='nexus'" | grep -q 1 || sudo -u postgres psql -c "CREATE USER nexus WITH PASSWORD 'nexus';"
+- sudo -u postgres psql -tc "SELECT 1 FROM pg_database WHERE datname='nexus'" | grep -q 1 || sudo -u postgres psql -c "CREATE DATABASE nexus OWNER nexus;"
+- sudo -u postgres psql -c "ALTER ROLE nexus SET client_encoding TO 'utf8';"
+- sudo -u postgres psql -c "ALTER ROLE nexus SET timezone TO 'UTC';"
 
 # Start Redis
 - systemctl start redis-server
