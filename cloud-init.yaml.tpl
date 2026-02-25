@@ -59,6 +59,119 @@ ssh-add ~/.ssh/id_ed25519
 echo "SSH Key generated. Run the following command to add it to GitHub:"
 echo "gh ssh-key add ~/.ssh/id_ed25519.pub --title \"ghabs-hq\""
 
+- path: /opt/logging/docker-compose.yml
+  permissions: '0644'
+  owner: root:root
+  content: |
+    version: '3.8'
+    
+    services:
+      loki:
+        image: grafana/loki:3.3.2
+        ports:
+          - "3100:3100"
+        command: -config.file=/etc/loki/local-config.yaml
+        volumes:
+          - ./loki-config.yaml:/etc/loki/local-config.yaml
+          - loki-data:/loki
+        restart: unless-stopped
+    
+      promtail:
+        image: grafana/promtail:3.3.2
+        volumes:
+          - /home/ubuntu:/var/log/ghabs:ro
+          - ./promtail-config.yaml:/etc/promtail/config.yaml
+        command: -config.file=/etc/promtail/config.yaml
+        restart: unless-stopped
+    
+      grafana:
+        image: grafana/grafana:11.4.0
+        environment:
+          - GF_AUTH_ANONYMOUS_ENABLED=true
+          - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+          - GF_AUTH_DISABLE_LOGIN_FORM=true
+        ports:
+          - "3000:3000"
+        volumes:
+          - grafana-data:/var/lib/grafana
+        restart: unless-stopped
+    
+    volumes:
+      loki-data:
+      grafana-data:
+
+- path: /opt/logging/loki-config.yaml
+  permissions: '0644'
+  owner: root:root
+  content: |
+    auth_enabled: false
+    
+    server:
+      http_listen_port: 3100
+      grpc_listen_port: 9096
+    
+    common:
+      instance_addr: 127.0.0.1
+      path_prefix: /tmp/loki
+      storage:
+        filesystem:
+          chunks_directory: /tmp/loki/chunks
+          rules_directory: /tmp/loki/rules
+      replication_factor: 1
+      ring:
+        kvstore:
+          store: inmemory
+    
+    query_range:
+      results_cache:
+        cache:
+          embedded_cache:
+            enabled: true
+            max_size_mb: 100
+    
+    schema_config:
+      configs:
+        - from: 2020-10-24
+          store: tsdb
+          object_store: filesystem
+          schema: v13
+          index:
+            prefix: index_
+            period: 24h
+            
+    ruler:
+      alertmanager_url: http://localhost:9093
+
+- path: /opt/logging/promtail-config.yaml
+  permissions: '0644'
+  owner: root:root
+  content: |
+    server:
+      http_listen_port: 9080
+      grpc_listen_port: 0
+    
+    positions:
+      filename: /tmp/positions.yaml
+    
+    clients:
+      - url: http://loki:3100/loki/api/v1/push
+    
+    scrape_configs:
+      - job_name: nexus-logs
+        static_configs:
+          - targets:
+              - localhost
+            labels:
+              job: nexus-logs
+              __path__: /var/log/ghabs/**/logs/**/*.log
+      - job_name: nexus-audit
+        static_configs:
+          - targets:
+              - localhost
+            labels:
+              job: nexus-audit
+              __path__: /var/log/ghabs/**/audit/**/*.jsonl
+
 runcmd:
 # Start Nginx
 - systemctl start nginx
@@ -94,3 +207,6 @@ runcmd:
 # Install VS Code Server (CLI)
 - curl -Lk 'https://code.visualstudio.com/sha/download?build=stable&os=cli-alpine-arm64' --output /tmp/vscode_cli.tar.gz
 - tar -xf /tmp/vscode_cli.tar.gz -C /usr/local/bin
+
+# Start Logging Stack (must run after Docker is installed)
+- cd /opt/logging && docker compose up -d
