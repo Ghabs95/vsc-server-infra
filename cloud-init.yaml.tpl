@@ -63,43 +63,7 @@ echo "gh ssh-key add ~/.ssh/id_ed25519.pub --title \"ghabs-hq\""
   permissions: '0644'
   owner: root:root
   content: |
-    version: '3.8'
-    
-    services:
-      loki:
-        image: grafana/loki:3.3.2
-        ports:
-          - "3100:3100"
-        command: -config.file=/etc/loki/local-config.yaml
-        volumes:
-          - ./loki-config.yaml:/etc/loki/local-config.yaml
-          - loki-data:/loki
-        restart: unless-stopped
-    
-      promtail:
-        image: grafana/promtail:3.3.2
-        volumes:
-          - /home/ubuntu:/var/log/ghabs:ro
-          - ./promtail-config.yaml:/etc/promtail/config.yaml
-        command: -config.file=/etc/promtail/config.yaml
-        restart: unless-stopped
-    
-      grafana:
-        image: grafana/grafana:11.4.0
-        environment:
-          - GF_AUTH_ANONYMOUS_ENABLED=true
-          - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
-          - GF_AUTH_DISABLE_LOGIN_FORM=true
-        ports:
-          - "3000:3000"
-        volumes:
-          - grafana-data:/var/lib/grafana
-        restart: unless-stopped
-    
-    volumes:
-      loki-data:
-      grafana-data:
-
+    # Placeholder file; overwritten in runcmd from repo source.
 - path: /opt/logging/loki-config.yaml
   permissions: '0644'
   owner: root:root
@@ -211,6 +175,10 @@ runcmd:
 # Install VS Code Server (CLI)
 - curl -Lk 'https://code.visualstudio.com/sha/download?build=stable&os=cli-alpine-arm64' --output /tmp/vscode_cli.tar.gz
 - tar -xf /tmp/vscode_cli.tar.gz -C /usr/local/bin
+
+# Sync logging compose file from repository source of truth
+- mkdir -p /opt/logging
+- curl -fsSL https://raw.githubusercontent.com/Ghabs95/vsc-server-infra/main/logging/docker-compose.yml -o /opt/logging/docker-compose.yml
 
 # Start Logging Stack (must run after Docker is installed)
 - cd /opt/logging && docker compose up -d
