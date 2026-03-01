@@ -208,6 +208,18 @@ runcmd:
 # Install Github/Gemini CLI
 - npm install -g @github/copilot @google/gemini-cli
 
+# Install GitHub CLI (gh)
+- curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+- chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+- echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+- apt-get update && apt-get install -y gh
+
+# Install GitLab CLI (glab)
+- curl -sL https://j.mp/glab-cli | sh
+
+# Install Ollama
+- curl -fsSL https://ollama.com/install.sh | sh
+
 # Install VS Code Server (CLI)
 - curl -Lk 'https://code.visualstudio.com/sha/download?build=stable&os=cli-alpine-arm64' --output /tmp/vscode_cli.tar.gz
 - tar -xf /tmp/vscode_cli.tar.gz -C /usr/local/bin
