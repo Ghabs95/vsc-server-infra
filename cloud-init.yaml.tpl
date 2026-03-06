@@ -137,8 +137,13 @@ echo "gh ssh-key add ~/.ssh/id_ed25519.pub --title \"ghabs-hq\""
               __path__: /var/log/ghabs/**/audit/**/*.jsonl
 
 runcmd:
-# Start Nginx
-- systemctl start nginx
+# Install and enable versioned Nginx site config
+- mkdir -p /etc/nginx/sites-available /etc/nginx/sites-enabled
+- curl -fsSL https://raw.githubusercontent.com/Ghabs95/vsc-server-infra/main/nginx/nexus-auth-webhook.conf -o /etc/nginx/sites-available/nexus-auth-webhook
+- ln -sfn /etc/nginx/sites-available/nexus-auth-webhook /etc/nginx/sites-enabled/nexus-auth-webhook
+- rm -f /etc/nginx/sites-enabled/default
+- nginx -t
+- systemctl restart nginx
 - systemctl enable nginx
 
 # Start PostgreSQL
@@ -160,17 +165,10 @@ runcmd:
 - systemctl enable docker
 - usermod -aG docker ubuntu
 
-# Install Node.js 20
-- curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-- apt-get install -y nodejs npm
-
 # Install Terraform
 - wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | tee /usr/share/keyrings/hashicorp-archive-keyring.gpg
 - echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list
 - apt-get update && apt-get install -y terraform
-
-# Install Github/Gemini CLI
-- npm install -g @github/copilot @google/gemini-cli
 
 # Install VS Code Server (CLI)
 - curl -Lk 'https://code.visualstudio.com/sha/download?build=stable&os=cli-alpine-arm64' --output /tmp/vscode_cli.tar.gz
