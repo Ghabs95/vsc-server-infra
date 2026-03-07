@@ -12,7 +12,7 @@ services:
   promtail:
     image: grafana/promtail:3.3.2
     volumes:
-      - /home/ubuntu:/var/log/ghabs:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
       - /home/ubuntu/git/ghabs/nexus/config/observability/promtail-config.yaml:/etc/promtail/config.yaml:ro
     command: -config.file=/etc/promtail/config.yaml
     restart: unless-stopped
